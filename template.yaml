@@ -27,36 +27,6 @@ Resources:
           Version: 2012-10-17
       EndpointConfiguration: PRIVATE
       TracingEnabled: true
-  aFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-aFunction
-      Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
-        - ResourceName: aFunction
-      CodeUri: src/aFunction
-      Handler: index.handler
-      Runtime: nodejs8.10
-      MemorySize: 3008
-      Timeout: 30
-      Tracing: Active
-      Policies:
-        - AWSXrayWriteOnlyAccess
-        - DynamoDBCrudPolicy:
-            TableName: !Ref aTable
-        - AWSLambdaENIManagementAccess
-      Environment:
-        Variables:
-          TABLE_NAME: !Ref aTable
-          TABLE_ARN: !GetAtt aTable.Arn
-      VpcConfig:
-        SecurityGroupIds:
-          - !GetAtt VirtualNetwork.DefaultSecurityGroup
-        SubnetIds:
-          - !Ref VirtualNetworkPrivateSubnet1
-          - !Ref VirtualNetworkPrivateSubnet2
-    Metadata:
-      StackeryName: aFunction
   aTable:
     Type: AWS::DynamoDB::Table
     Properties:
