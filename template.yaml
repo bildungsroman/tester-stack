@@ -14,26 +14,15 @@ Resources:
         paths:
           /:
             get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${failFunction.Arn}/invocations
               responses: {}
         x-amazon-apigateway-policy:
           Version: 2012-10-17
       EndpointConfiguration: PRIVATE
       TracingEnabled: true
-  aTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-      BillingMode: PAY_PER_REQUEST
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      StreamSpecification:
-        StreamViewType: NEW_AND_OLD_IMAGES
-      TableName: !Sub ${AWS::StackName}-aTable
-    Metadata:
-      StackeryName: aTable
   failBase:
     Type: AWS::RDS::DBInstance
     Properties:
@@ -82,6 +71,36 @@ Resources:
             - Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName} VPC Security Group
             - ResourceName: failBase
       VpcId: !Ref DefaultVPCId
+  failFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-failFunction
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: failFunction
+      CodeUri: src/failFunction
+      Handler: index.handler
+      Runtime: nodejs8.10
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+      Events:
+        ApiGET:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+            RestApiId: !Ref Api
+      Environment:
+        Variables:
+          DB_ID: !Ref failBase
+          DB_ADDRESS: !GetAtt failBase.Endpoint.Address
+          DB_PORT: !GetAtt failBase.Endpoint.Port
+          DB_ARN: !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${failBase}
+    Metadata:
+      StackeryName: failFunction
 Parameters:
   StackTagName:
     Type: String
