@@ -23,54 +23,6 @@ Resources:
           Version: 2012-10-17
       EndpointConfiguration: PRIVATE
       TracingEnabled: true
-  failBase:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      BackupRetentionPeriod: '1'
-      DBSubnetGroupName: !Ref failBaseSubnetGroup
-      Engine: mysql
-      MasterUsername: root
-      MasterUserPassword: ''
-      AllocatedStorage: '1'
-      AllowMajorVersionUpgrade: true
-      AutoMinorVersionUpgrade: true
-      CopyTagsToSnapshot: true
-      DBInstanceClass: db.t2.micro
-      EngineVersion: '8.0'
-      MultiAZ: false
-      StorageType: gp2
-      PubliclyAccessible: true
-      VPCSecurityGroups:
-        - !Ref failBaseSecurityGroup
-    Metadata:
-      StackeryName: failBase
-  failBaseSubnetGroup:
-    Type: AWS::RDS::DBSubnetGroup
-    Properties:
-      DBSubnetGroupDescription: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName} VPC Subnets
-        - ResourceName: failBase
-      SubnetIds: !Ref DefaultVPCSubnets
-      Tags:
-        - Key: Name
-          Value: !Sub
-            - Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName} VPC Subnets
-            - ResourceName: failBase
-  failBaseSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Database Security Group
-      SecurityGroupIngress:
-        CidrIp: 0.0.0.0/0
-        FromPort: 3306
-        IpProtocol: tcp
-        ToPort: 3306
-      Tags:
-        - Key: Name
-          Value: !Sub
-            - Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName} VPC Security Group
-            - ResourceName: failBase
-      VpcId: !Ref DefaultVPCId
   failFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -93,12 +45,6 @@ Resources:
             Path: /
             Method: GET
             RestApiId: !Ref Api
-      Environment:
-        Variables:
-          DB_ID: !Ref failBase
-          DB_ADDRESS: !GetAtt failBase.Endpoint.Address
-          DB_PORT: !GetAtt failBase.Endpoint.Port
-          DB_ARN: !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${failBase}
     Metadata:
       StackeryName: failFunction
 Parameters:
@@ -111,9 +57,3 @@ Parameters:
   EnvironmentAPIGatewayStageName:
     Type: String
     Description: Environment name used for API Gateway Stage names (injected by Stackery at deployment time)
-  DefaultVPCId:
-    Type: AWS::EC2::VPC::Id
-    Description: AWS account-specific default VPC ID (injected by Stackery at deployment time)
-  DefaultVPCSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: AWS account-specific default VPC subnets (injected by Stackery at deployment time)
