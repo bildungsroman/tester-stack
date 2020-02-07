@@ -1,7 +1,28 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Resources:
-  MyFirstBucketB8884501:
+  Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-Function
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: Function
+      CodeUri: src/Function
+      Handler: index.handler
+      Runtime: nodejs12.x
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+        - S3CrudPolicy:
+            BucketName: !Ref MyFirstBucket
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref MyFirstBucket
+          BUCKET_ARN: !GetAtt MyFirstBucket.Arn
+  MyFirstBucket:
     Type: AWS::S3::Bucket
     Properties:
       VersioningConfiguration:
@@ -14,27 +35,6 @@ Resources:
     Type: AWS::CDK::Metadata
     Properties:
       Modules: 'aws-cdk=1.0.0,@aws-cdk/aws-events=1.0.0,@aws-cdk/aws-iam=1.0.0,@aws-cdk/aws-kms=1.0.0,@aws-cdk/aws-s3=1.0.0,@aws-cdk/core=1.0.0,@aws-cdk/cx-api=1.0.0,@aws-cdk/region-info=1.0.0,jsii-runtime=node.js/v8.12.0'
-  Function:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-Function
-      Description: !Sub
-        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
-        - ResourceName: Function
-      CodeUri: src/Function
-      Handler: index.handler
-      Runtime: nodejs10.x
-      MemorySize: 3008
-      Timeout: 30
-      Tracing: Active
-      Policies:
-        - AWSXrayWriteOnlyAccess
-        - S3CrudPolicy:
-            BucketName: !Ref MyFirstBucketB8884501
-      Environment:
-        Variables:
-          BUCKET_NAME: !Ref MyFirstBucketB8884501
-          BUCKET_ARN: !GetAtt MyFirstBucketB8884501.Arn
 Parameters:
   StackTagName:
     Type: String
